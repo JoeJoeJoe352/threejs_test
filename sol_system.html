@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+    <title>Solar System</title>
+    <script type="text/javascript" src="libs/three.js"></script>
+    <script type="text/javascript" src="libs/stats.js"></script>
+    <script type="text/javascript" src="libs/OBJLoader.js"></script>
+    <script type="text/javascript" src="libs/dat.gui.js"></script>
+    <script type="text/javascript" src="libs/OrbitControls.js"></script>
+    <style> body { margin: 0; overflow: hidden; } </style>
+</head>
+<body>
+
+<div id="Stats-output"></div>
+<div id="WebGL-output"></div>
+
+<script type="text/javascript">
+
+    function init() {
+        var stats = initStats();
+        // jelenet létrehozása, amiben objektumok, kamera, stb lesz
+        var scene = new THREE.Scene();
+        // kamera létrehozása. Látótávolság 7000, mert a háttér kb 3500 pixelnyire van a középponttól
+        var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 7000);
+        //renderer. A lensflares miatt szükség van a két módosítóra
+        var renderer = new THREE.WebGLRenderer( { antialias: true, alpha: true } );
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMapEnabled = true;
+        //Bolygók és a groupjaik deklarálása. Ez utóbbi azért kell, hogy a bolygó forgási síkja ne forduljon elő az x tengelyes forgatás miatt
+        //Merkúr objektum
+        var mercury;
+        //Vénusz objektum
+        var venus;
+        //Vénusz csoportja
+        var group_v = new THREE.Group();
+        //Föld objektum
+        var earth;
+        //Föld csoportja,
+        var group_e = new THREE.Group();
+        //Mars objektum
+        var mars;
+        var group_m = new THREE.Group();
+        //Jupiter objektum
+        var jupiter;
+        //Szaturnusz objektum
+        var saturn;
+        //Szaturnusz gyűrűje
+        var ring1;
+        var group_sz = new THREE.Group();
+        //Uránusz objektum
+        var uranus;
+        var group_u = new THREE.Group();
+        //Neptunusz objektum
+        var neptune;
+        var group_n = new THREE.Group();
+        //.obj file betöltő
+        var loader = new THREE.OBJLoader();
+
+        //Merkúr
+        loader.load('obj/spehere_alap.obj', function (loadedMesh) {
+            //anyagi tulajdonság
+            var material = new THREE.MeshPhongMaterial({});
+            loadedMesh.children.forEach(function (child) {
+                child.material = material;
+                child.geometry.computeFaceNormals();
+                child.geometry.computeVertexNormals();
+            });
+            mercury = loadedMesh;
+            loadedMesh.traverse( function (child) {
+                if ( child instanceof THREE.Mesh ) {
+                    child.material.map = THREE.ImageUtils.loadTexture( 'images/mercurymap.jpg');
+                }
+            });
+            scene.add(loadedMesh);
+        });
+
+        //A Vénusz bolygó
+        loader.load('obj/spehere_alap.obj', function (loadedMesh) {
+            var material = new THREE.MeshPhongMaterial({});
+            loadedMesh.children.forEach(function (child) {
+                child.material = material;
+                child.geometry.computeFaceNormals();
+                child.geometry.computeVertexNormals();
+            });
+            venus = loadedMesh;
+            loadedMesh.traverse( function (child) {
+                if ( child instanceof THREE.Mesh ) {
+                    child.material.map = THREE.ImageUtils.loadTexture( 'images/venusmap.jpg');
+                }
+            });
+            loadedMesh.rotation.x = 117/180*3.14;
+            group_v.add(loadedMesh);
+            scene.add(group_v);
+        });
+
+        // A Föld bolygó
+        loader.load('obj/spehere_alap.obj', function (loadedMesh) {
+            var material = new THREE.MeshLambertMaterial({});
+            loadedMesh.children.forEach(function (child) {
+                child.material = material;
+                child.geometry.computeFaceNormals();
+                child.geometry.computeVertexNormals();
+            });
+            earth = loadedMesh;
+            loadedMesh.traverse( function (child) {
+                if ( child instanceof THREE.Mesh ) {
+                    child.material.map = THREE.ImageUtils.loadTexture( 'images/earthmap1k.jpg');
+                    //Spekuláris textúra. Hogy a bolygó egyes részei jobban visszaverjék a fényt
+                    child.material.specularMap = THREE.ImageUtils.loadTexture('images/earthspec1k.jpg');
+                    child.material.specular = new THREE.Color('grey');
+                    child.material.needsUpdate = true;
+                }
+            });
+            loadedMesh.rotation.x = 23/180*3.14;
+            group_e.add(earth);
+            scene.add(group_e);
+        });
+
+
+        // A Mars bolygó
+        loader.load('obj/spehere_alap.obj', function (loadedMesh) {
+            var material = new THREE.MeshPhongMaterial({});
+            loadedMesh.children.forEach(function (child) {
+                child.material = material;
+                child.geometry.computeFaceNormals();
+                child.geometry.computeVertexNormals();
+            });
+            mars = loadedMesh;
+            loadedMesh.traverse( function (child) {
+                if ( child instanceof THREE.Mesh ) {
+                    child.material.map = THREE.ImageUtils.loadTexture( 'images/marsmap1k.jpg');
+                }
+            });
+            loadedMesh.rotation.x = 25/180*3.14;
+            group_m.add(mars);
+            scene.add(group_m);
+        });
+
+        // A jupiter bolygó
+        loader.load('obj/spehere_alap.obj', function (loadedMesh) {
+            var material = new THREE.MeshPhongMaterial({});
+            loadedMesh.children.forEach(function (child) {
+                child.material = material;
+                child.geometry.computeFaceNormals();
+                child.geometry.computeVertexNormals();
+            });
+            jupiter = loadedMesh;
+            loadedMesh.traverse( function (child) {
+                if ( child instanceof THREE.Mesh ) {
+                    child.material.map = THREE.ImageUtils.loadTexture( 'images/jupitermap.jpg');
+                }
+            });
+            scene.add(loadedMesh);
+        });
+
+        // A szaturnusz bolygó
+        loader.load('obj/spehere_alap.obj', function (loadedMesh) {
+            var material = new THREE.MeshPhongMaterial({});
+            loadedMesh.children.forEach(function (child) {
+                child.material = material;
+                child.geometry.computeFaceNormals();
+                child.geometry.computeVertexNormals();
+            });
+            saturn = loadedMesh;
+            loadedMesh.traverse( function (child) {
+                if ( child instanceof THREE.Mesh ) {
+                    child.material.map = THREE.ImageUtils.loadTexture( 'images/saturnmap.jpg');
+                }
+            });
+            loadedMesh.rotation.x = 26/180*3.14;
+            group_sz.add(saturn);
+            scene.add(group_sz);
+        });
+
+        //szaturnusz gyűrű
+        loader.load('obj/saturnring.obj', function (loadedMesh) {
+            var material = new THREE.MeshPhongMaterial({});
+            loadedMesh.children.forEach(function (child) {
+                child.material = material;
+                child.geometry.computeFaceNormals();
+                child.geometry.computeVertexNormals();
+            });
+            ring1 = loadedMesh;
+            loadedMesh.traverse( function (child) {
+                if ( child instanceof THREE.Mesh ) {
+                    child.material.map = THREE.ImageUtils.loadTexture( 'images/saturnringcolor.jpg');
+                }
+            });
+            loadedMesh.position.y=-10;
+            loadedMesh.rotation.x = 26/180*3.14;
+            group_sz.add(ring1);
+            //a szaturnusz csoport már a jelenethez van adva, szóval nem kell újra scene.add-olni
+        });
+
+        // A Uránusz bolygó
+        loader.load('obj/spehere_alap.obj', function (loadedMesh) {
+            var material = new THREE.MeshPhongMaterial({});
+            loadedMesh.children.forEach(function (child) {
+                child.material = material;
+                child.geometry.computeFaceNormals();
+                child.geometry.computeVertexNormals();
+            });
+            uranus = loadedMesh;
+            loadedMesh.traverse( function (child) {
+                if ( child instanceof THREE.Mesh ) {
+                    child.material.map = THREE.ImageUtils.loadTexture( 'images/uranusmap.jpg');
+                }
+            });
+            loadedMesh.rotation.x = 3.14/2;
+            scene.add(uranus);
+        });
+
+        // A Neptunusz
+        loader.load('obj/spehere_alap.obj', function (loadedMesh) {
+            var material = new THREE.MeshPhongMaterial({});
+            loadedMesh.children.forEach(function (child) {
+                child.material = material;
+                child.geometry.computeFaceNormals();
+                child.geometry.computeVertexNormals();
+            });
+            neptune = loadedMesh;
+            loadedMesh.traverse( function (child) {
+                if ( child instanceof THREE.Mesh ) {
+                    child.material.map = THREE.ImageUtils.loadTexture( 'images/neptunemap.jpg');
+                }
+            });
+            loadedMesh.rotation.x = 28/180*3.14;
+            group_n.add(neptune);
+            scene.add(group_n);
+        });
+
+        //Skybox (gyakrolatilag a doboz, amiben a jelenet van. Ez adja a hátteret) kialakítása
+        var imagePrefix = "images/nebula-";
+        var directions  = ["xpos", "xneg", "ypos", "yneg", "zpos", "zneg"];
+        var imageSuffix = ".png";
+        //A doboz, amin a háttér van
+        var skyGeometry = new THREE.BoxGeometry( 6000, 6000, 6000 );
+        //a 6 oldalra a képek betöltése
+        var imageURLs = [];
+        for (var i = 0; i < 6; i++)
+            imageURLs.push( imagePrefix + directions[i] + imageSuffix );
+        var textureCube = THREE.ImageUtils.loadTextureCube( imageURLs );
+        var shader = THREE.ShaderLib[ "cube" ];
+        shader.uniforms[ "tCube" ].value = textureCube;
+        var skyMaterial = new THREE.ShaderMaterial( {
+            fragmentShader: shader.fragmentShader,
+            vertexShader: shader.vertexShader,
+            uniforms: shader.uniforms,
+            depthWrite: false,
+            side: THREE.BackSide
+        } );
+        var skyBox = new THREE.Mesh( skyGeometry, skyMaterial );
+        scene.add( skyBox );
+
+        // Kamera poziciójának beállítása
+        camera.position.x = -80;
+        camera.position.y = 40;
+        camera.position.z = 90;
+        camera.lookAt(scene.position);
+
+        //Kamera forgatási lehetőségének beállítása
+        var orbitControls = new THREE.OrbitControls(camera);
+        var clock = new THREE.Clock();
+
+        //A nap fényének beállítása
+        var pointColor = "#ccffcc";
+        var pointLight = new THREE.PointLight(pointColor);
+        pointLight.distance = 5000;
+        pointLight.intensity = 3;
+        scene.add(pointLight);
+        /*ambiens fény beállítása. Mivel ha ez be van kapcsolva, akkor nem látszanak az árnyékok, ezért
+        * ezt külön, a GUI-n lehet be-kikapcsolni*/
+        var ambiLight = new THREE.AmbientLight(0xccffcc);
+
+        //LensFlares beállítása. A lensflare által generált kép olyan hatást ad, mint a nap
+        var textureFlare0 = THREE.ImageUtils.loadTexture("images/lensflare0.png");
+        var textureFlare3 = THREE.ImageUtils.loadTexture("images/lensflare3.png");
+        var flareColor = new THREE.Color(0xccffcc);
+        var lensFlare = new THREE.LensFlare(textureFlare0, 350, 0.0, THREE.AdditiveBlending, flareColor);
+        lensFlare.add(textureFlare3, 60, 0.6, THREE.AdditiveBlending);
+        lensFlare.add(textureFlare3, 70, 0.7, THREE.AdditiveBlending);
+        lensFlare.add(textureFlare3, 120, 0.9, THREE.AdditiveBlending);
+        lensFlare.add(textureFlare3, 70, 1.0, THREE.AdditiveBlending);
+        //A lensflare a pointlight koordinátáján van
+        lensFlare.position.copy(pointLight.position);
+        scene.add(lensFlare);
+
+        document.getElementById("WebGL-output").appendChild(renderer.domElement);
+
+        // GUI osztályának elkészítése
+        var controls = new function () {
+            this.rotationSpeed = 1;
+            this.size = 1;
+            this.ambient_light = false;
+        };
+
+        // GUI elkészítése
+        var gui = new dat.GUI();
+        gui.add(controls, 'rotationSpeed', 0, 32);
+        gui.add(controls, 'size', 1, 500);
+        gui.add(controls, 'ambient_light');
+
+
+        render();
+        function render() {
+            stats.update();
+            //Keringési időnél egy másodperc = 24 óra
+            //Forgási időnél 1 másodpec = 1 óra
+            n = Date.now()/60/60/60*24;
+
+            //ambientlight ki-bekapcsolása
+            if(controls.ambient_light){
+                scene.add(ambiLight);
+                pointLight.intensity = 0;
+            } else{
+                scene.remove(ambiLight);
+                pointLight.intensity = 2;
+            }
+            //Merkúr tengely és nap körüli forgásának, illetve a méretének a beállítása
+            if (mercury) {
+                mercury.rotation.y += (1/(59*24)/9.31)*controls.rotationSpeed;
+                mercury.position.x = 63*Math.cos(-n*(360/(88*24)*1));
+                mercury.position.z = 56 * Math.sin(-n*(360/(88*24)*1));
+                mercury.scale.set(0.048*controls.size,0.048*controls.size,0.048*controls.size);
+            }
+
+            if (venus) {
+                group_v.rotation.y -= (1/(243*24)/9.31)*controls.rotationSpeed;
+                group_v.position.x = 108*Math.cos(-n*((360/5392)));
+                group_v.position.z = 107 * Math.sin(-n*((360/5392)));
+                venus.scale.set(0.12104*controls.size,0.12104*controls.size,0.12104*controls.size);
+            }
+
+            //8760 = 365 * 24. Tehát egy körülfordulási idő órában megadva.
+            if (earth) {
+                group_e.rotation.y += (1/24/9.31)*controls.rotationSpeed;
+                group_e.position.x = 150*Math.cos(-n*(360/8760));
+                group_e.position.z = 150 * Math.sin(-n*(360/8760));
+                earth.scale.set(0.12756*controls.size,0.12756*controls.size,0.12756*controls.size);
+            }
+
+            if (mars) {
+                group_m.rotation.y += (1/24.6/9.31)*controls.rotationSpeed;
+                group_m.position.x = 337*Math.cos(-n*(360/16488));
+                group_m.position.z = 227 * Math.sin(-n*(360/16488));
+                mars.scale.set(0.06787*controls.size,0.06787*controls.size,0.06787*controls.size);
+            }
+
+            if (jupiter) {
+                jupiter.rotation.y += (1/9.93/9.31)*controls.rotationSpeed;
+                jupiter.position.x = 778*Math.cos(-n*(360/103368));
+                jupiter.position.z = 778 * Math.sin(-n*(360/103368));
+                jupiter.scale.set(1.42*controls.size,1.42*controls.size,1.42*controls.size);
+            }
+
+            if (saturn) {
+                group_sz.rotation.y += (1/10.6/9.31)*controls.rotationSpeed;
+                group_sz.position.x = 1430*Math.cos(-n*(360/257544));
+                group_sz.position.z = 1430 * Math.sin(-n*(360/257544));
+                saturn.scale.set(1.2*controls.size,1.2*controls.size,1.2*controls.size);
+            }
+
+            if (ring1) {
+                if(saturn) {
+                    ring1.position.copy(saturn.position);
+                }
+                ring1.scale.set(1.2*controls.size,1.2*controls.size,1.2*controls.size);
+            }
+
+            if (uranus) {
+                //Az igazi távolsága 2870 egység, de emiatt alig látszódna, szóval lentebb vettem
+                uranus.rotation.y -= (1/17.24/9.31)*controls.rotationSpeed;
+                uranus.position.x = 2000*Math.cos(-n*(360/735840));
+                uranus.position.z = 2000 * Math.sin(-n*(360/735840));
+                uranus.scale.set(0.51*controls.size,0.51*controls.size,0.51*controls.size);
+            }
+
+            if (neptune) {
+                //Az igazi távolsága 4500 egység,
+                group_n.rotation.y += (1/16.11/9.31)*controls.rotationSpeed;
+                group_n.position.x = 2500*Math.cos(-n*(360/1489200));
+                group_n.position.z = 2500 * Math.sin(-n*(360/1489200));
+                neptune.scale.set(0.49*controls.size,0.49*controls.size,0.49*controls.size);
+            }
+
+            var delta = clock.getDelta();
+            orbitControls.update(delta);
+
+            // render using requestAnimationFrame
+            requestAnimationFrame(render);
+            renderer.render(scene, camera);
+        }
+
+        function initStats() {
+            var stats = new Stats();
+            stats.setMode(0); // 0: fps, 1: ms
+            // Align top-left
+            stats.domElement.style.position = 'absolute';
+            stats.domElement.style.left = '0px';
+            stats.domElement.style.top = '0px';
+
+            document.getElementById("Stats-output").appendChild(stats.domElement);
+
+            return stats;
+        }
+    }
+
+    window.onload = init;
+</script>
+</body>
+</html>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         
