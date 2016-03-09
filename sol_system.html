@@ -39,6 +39,7 @@
         var earth;
         //Föld csoportja,
         var group_e = new THREE.Group();
+        var moon;
         //Mars objektum
         var mars;
         var group_m = new THREE.Group();
@@ -51,10 +52,10 @@
         var group_sz = new THREE.Group();
         //Uránusz objektum
         var uranus;
-        var group_u = new THREE.Group();
         //Neptunusz objektum
         var neptune;
         var group_n = new THREE.Group();
+        var tardis;
         //.obj file betöltő
         var loader = new THREE.OBJLoader();
 
@@ -95,29 +96,55 @@
             scene.add(group_v);
         });
 
+
         // A Föld bolygó
         loader.load('obj/spehere_alap.obj', function (loadedMesh) {
             var material = new THREE.MeshLambertMaterial({});
+            material.map = THREE.ImageUtils.loadTexture( 'images/earthmap1k.jpg');
+            //Spekuláris textúra. Hogy a bolygó egyes részei jobban visszaverjék a fényt
+            material.specularMap = THREE.ImageUtils.loadTexture('images/earthspec1k.jpg');
+            material.specular = new THREE.Color('grey');
+
             loadedMesh.children.forEach(function (child) {
                 child.material = material;
                 child.geometry.computeFaceNormals();
                 child.geometry.computeVertexNormals();
             });
             earth = loadedMesh;
-            loadedMesh.traverse( function (child) {
-                if ( child instanceof THREE.Mesh ) {
-                    child.material.map = THREE.ImageUtils.loadTexture( 'images/earthmap1k.jpg');
-                    //Spekuláris textúra. Hogy a bolygó egyes részei jobban visszaverjék a fényt
-                    child.material.specularMap = THREE.ImageUtils.loadTexture('images/earthspec1k.jpg');
-                    child.material.specular = new THREE.Color('grey');
-                    child.material.needsUpdate = true;
-                }
-            });
+
             loadedMesh.rotation.x = 23/180*3.14;
             group_e.add(earth);
             scene.add(group_e);
         });
 
+        // A Hold
+        loader.load('obj/spehere_alap.obj', function (loadedMesh) {
+            bMap = THREE.ImageUtils.loadTexture('images/moonbump1k.jpg');
+            text = THREE.ImageUtils.loadTexture( 'images/moonmap1k.jpg');
+            var material = new THREE.MeshLambertMaterial({bumpMap: bMap});
+            material.map = text;
+            loadedMesh.children.forEach(function (child) {
+                child.material = material;
+                child.geometry.computeFaceNormals();
+                child.geometry.computeVertexNormals();
+            });
+            moon = loadedMesh;
+            scene.add(moon);
+        });
+
+        //tardis easter egg
+        loader.load('obj/Tardis.obj', function (loadedMesh) {
+            //anyagi tulajdonság
+            var material = new THREE.MeshPhongMaterial({color:"blue"});
+            loadedMesh.children.forEach(function (child) {
+                child.material = material;
+                child.geometry.computeFaceNormals();
+                child.geometry.computeVertexNormals();
+            });
+            tardis = loadedMesh;
+            loadedMesh.rotation.x = 45/180*3.14;
+            scene.add(loadedMesh);
+        });
 
         // A Mars bolygó
         loader.load('obj/spehere_alap.obj', function (loadedMesh) {
@@ -299,7 +326,7 @@
         // GUI elkészítése
         var gui = new dat.GUI();
         gui.add(controls, 'rotationSpeed', 0, 32);
-        gui.add(controls, 'size', 1, 500);
+        gui.add(controls, 'size', 1, 50);
         gui.add(controls, 'ambient_light');
 
 
@@ -339,6 +366,26 @@
                 group_e.position.x = 150*Math.cos(-n*(360/8760));
                 group_e.position.z = 150 * Math.sin(-n*(360/8760));
                 earth.scale.set(0.12756*controls.size,0.12756*controls.size,0.12756*controls.size);
+            }
+
+            if (moon) {
+                moon.rotation.y -= (1/(30*24)/9.31)*controls.rotationSpeed;
+                if(group_e) {
+                    //valós táv 384000 km, azaz 0.38 de így eltűnik ha a Földet nagítjuk
+                    moon.position.x = group_e.position.x + 10.4 * Math.cos(-n * (360 / 648));
+                    moon.position.z = group_e.position.z + 10.4 * Math.sin(-n * (360 / 648));
+                }
+                moon.scale.set(0.03478*controls.size,0.03478*controls.size,0.03478*controls.size);
+            }
+
+            if (tardis) {
+                tardis.rotation.y -= (1/(10)/9.31)*controls.rotationSpeed;
+                if(moon) {
+                    //valós táv 384000 km, azaz 0.38 de így eltűnik ha a Földet nagítjuk
+                    tardis.position.x = moon.position.x + 2 * Math.cos(-n * (360 / 648));
+                    tardis.position.z = moon.position.z + 2 * Math.sin(-n * (360 / 648));
+                }
+                tardis.scale.set(0.001*controls.size,0.001*controls.size,0.001*controls.size);
             }
 
             if (mars) {
